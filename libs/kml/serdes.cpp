@@ -1582,7 +1582,7 @@ void KmlParser::CharData(std::string & value)
         if (currTag == kCoordinates)
           SetOrigin(value);
       }
-      else if (prevTag == "LineString")
+      else if (prevTag == "LineString" || prevTag == "LinearRing")
       {
         if (currTag == kCoordinates)
           ParseLineString(value);
@@ -1652,7 +1652,7 @@ void KmlParser::CharData(std::string & value)
         if (currTag == kCoordinates)
           SetOrigin(value);
       }
-      else if (prevTag == "LineString")
+      else if (prevTag == "LineString" || prevTag == "LinearRing")
       {
         if (currTag == kCoordinates)
           ParseLineString(value);
