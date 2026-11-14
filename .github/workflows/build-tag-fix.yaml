@@ -63,7 +63,7 @@ jobs:
           PATCH_EOF
           cat > "$RUNNER_TEMP/kmz_name.patch" <<'PATCH_EOF'
           diff --git a/libs/map/bookmark_helpers.cpp b/libs/map/bookmark_helpers.cpp
-          index 388c2c2..c54d755 100644
+          index 388c2c2..c95caa9 100644
           --- a/libs/map/bookmark_helpers.cpp
           +++ b/libs/map/bookmark_helpers.cpp
           @@ -26,6 +26,7 @@
@@ -74,7 +74,17 @@ jobs:
            #include <ranges>
            
            namespace
-          @@ -444,7 +445,9 @@ void FillEmptyNames(std::unique_ptr<kml::FileData> & kmlData, std::string const
+          @@ -437,6 +438,9 @@ std::string GenerateValidAndUniqueTrashedFilePath(std::string const & fileName)
+           
+           std::string const kDefaultBookmarksFileName = "Bookmarks";
+           
+          +// Extracted KML path -> name of the KMZ it came from (used as the category name on import).
+          +static std::map<std::string, std::string> g_kmzCategoryNames;
+          +
+           // Populate empty category & track names based on file name: assign file name to category name,
+           // if there is only one unnamed track - assign file name to it, otherwise add numbers 1, 2, 3...
+           // to file name to build names for all unnamed tracks
+          @@ -444,7 +448,9 @@ void FillEmptyNames(std::unique_ptr<kml::FileData> & kmlData, std::string const
            {
              auto const name = base::GetNameFromFullPathWithoutExt(file);
            
@@ -85,16 +95,6 @@ jobs:
                kmlData->m_categoryData.m_name[kml::kDefaultLang] = name;
            
              if (kmlData->m_tracksData.empty())
-          @@ -493,6 +496,9 @@ std::unique_ptr<kml::FileData> LoadKmlFile(std::string const & file, FileType fi
-             return kmlData;
-           }
-           
-          +// Extracted KML path -> name of the KMZ it came from (used as the category name on import).
-          +static std::map<std::string, std::string> g_kmzCategoryNames;
-          +
-           static std::vector<std::string> GetFilePathsToLoadFromKmz(std::string const & filePath)
-           {
-             // Extract KML files from KMZ archive and save to temp KMLs with unique name.
           @@ -504,11 +510,22 @@ static std::vector<std::string> GetFilePathsToLoadFromKmz(std::string const & fi
                files.erase(std::remove_if(files.begin(), files.end(),
                                           [](auto const & file) { return GetLowercaseFileExt(file.first) != kKmlExtension; }),
