@@ -184,11 +184,61 @@ jobs:
            /* 6.4 Road labels */
            
           PATCH_EOF
-          cat > "$RUNNER_TEMP/dark_labels_white.patch" <<'PATCH_EOF'
+          cat > "$RUNNER_TEMP/dark_style.patch" <<'PATCH_EOF'
           diff --git a/data/styles/default/dark/colors.mapcss b/data/styles/default/dark/colors.mapcss
-          index cb614e9..41daf88 100644
+          index cb614e9..b91216d 100644
           --- a/data/styles/default/dark/colors.mapcss
           +++ b/data/styles/default/dark/colors.mapcss
+          @@ -104,17 +104,17 @@
+           /* 5.ROADS */
+           /* 5.1 All roads */
+           
+          -@trunk0: #752900;
+          -@trunk1: #752d00;
+          -@primary0: #753400;
+          -@primary1: #753300;
+          -@primary2: #753800;
+          -@secondary0: #754b00;
+          -@secondary1: #754900;
+          -@tertiary: #4d4d4d;
+          -@residential: #454545;
+          -@pedestrian: #454545;
+          -@footway: #454545;
+          +@trunk0: #E8C547;
+          +@trunk1: #E8C547;
+          +@primary0: #E8C547;
+          +@primary1: #E8C547;
+          +@primary2: #E8C547;
+          +@secondary0: #E8C547;
+          +@secondary1: #E8C547;
+          +@tertiary: #7A7A7A;
+          +@residential: #6E6E6E;
+          +@pedestrian: #6E6E6E;
+          +@footway: #6E6E6E;
+           @cycleway: #6E3D47;
+           @construction: #332F2D;
+           @track: #5F532D;
+          @@ -129,15 +129,15 @@
+           
+           /* 5.3 Tunnels */
+           
+          -@trunk_tunnel: #4d1b00;
+          +@trunk_tunnel: #A08A3A;
+           @trunk_tunnel_casing: #000000;
+          -@primary_tunnel: #4d2100;
+          +@primary_tunnel: #A08A3A;
+           @primary_tunnel_casing: #000000;
+          -@secondary_tunnel: #4d3100;
+          +@secondary_tunnel: #A08A3A;
+           @secondary_tunnel_casing:  #000000;
+          -@tertiary_tunnel: #383838;
+          +@tertiary_tunnel: #5A5A5A;
+           @tertiary_tunnel_casing:  #000000;
+          -@residential_tunnel: #303030;
+          +@residential_tunnel: #5A5A5A;
+           @residential_tunnel_casing: #000000;
+           
+           /* 5.4 Piste */
           @@ -165,30 +165,30 @@
            /* 6.LABELS COLORS */
            /* 6.1 Main labels */
@@ -237,6 +287,56 @@ jobs:
            /* 6.4 Road labels */
            
           PATCH_EOF
+          cat > "$RUNNER_TEMP/road_gray.patch" <<'PATCH_EOF'
+          diff --git a/data/styles/default/light/colors.mapcss b/data/styles/default/light/colors.mapcss
+          index 41aeb25..35e992b 100644
+          --- a/data/styles/default/light/colors.mapcss
+          +++ b/data/styles/default/light/colors.mapcss
+          @@ -104,17 +104,17 @@
+           /* 5.ROADS */
+           /* 5.1 All roads */
+           
+          -@trunk0: #FF7326;
+          -@trunk1: #FF7A26;
+          -@primary0:  #FF8726;
+          -@primary1: #FF9440;
+          -@primary2: #FFA14C;
+          -@secondary0: #FFB226;
+          -@secondary1: #FFBF52;
+          -@tertiary: #f7f7f7;
+          -@residential: #f2f2f2;
+          -@pedestrian: #f2f2f2;
+          -@footway: #f2f2f2;
+          +@trunk0: #FFD84D;
+          +@trunk1: #FFD84D;
+          +@primary0:  #FFD84D;
+          +@primary1: #FFD84D;
+          +@primary2: #FFD84D;
+          +@secondary0: #FFD84D;
+          +@secondary1: #FFD84D;
+          +@tertiary: #B8B8B8;
+          +@residential: #A8A8A8;
+          +@pedestrian: #A8A8A8;
+          +@footway: #A8A8A8;
+           @cycleway: #5654FF;
+           @construction: #BBBBAA;
+           @track: #635730;
+          @@ -129,11 +129,11 @@
+           
+           /* 5.3 Tunnels */
+           
+          -@trunk_tunnel: #FCA462;
+          +@trunk_tunnel: #E8C547;
+           @trunk_tunnel_casing: #808080;
+          -@primary_tunnel: #FCA462;
+          +@primary_tunnel: #E8C547;
+           @primary_tunnel_casing: #808080;
+          -@secondary_tunnel: #FFBF52;
+          +@secondary_tunnel: #E8C547;
+           @secondary_tunnel_casing:  #808080;
+           @tertiary_tunnel: #FFFFFF;
+           @tertiary_tunnel_casing:  #808080;
+          PATCH_EOF
 
       - name: Apply patches
         run: |
@@ -246,8 +346,10 @@ jobs:
           git apply "$RUNNER_TEMP/kmz_name.patch"
           git apply --check "$RUNNER_TEMP/map_labels_white.patch"
           git apply "$RUNNER_TEMP/map_labels_white.patch"
-          git apply --check "$RUNNER_TEMP/dark_labels_white.patch"
-          git apply "$RUNNER_TEMP/dark_labels_white.patch"
+          git apply --check "$RUNNER_TEMP/dark_style.patch"
+          git apply "$RUNNER_TEMP/dark_style.patch"
+          git apply --check "$RUNNER_TEMP/road_gray.patch"
+          git apply "$RUNNER_TEMP/road_gray.patch"
           git diff --stat
 
       - name: Submodules
