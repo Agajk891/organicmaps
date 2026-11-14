@@ -1,0 +1,485 @@
+name: Build optimized KML APK (release, debug-signed)
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build WebRelease APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - name: Install build tools
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ninja-build python3-pil
+
+      - name: Checkout release tag
+        uses: actions/checkout@v6
+        with:
+          repository: organicmaps/organicmaps
+          ref: 2026.11.11-39-android
+          fetch-depth: 200
+
+      - name: Write patches
+        run: |
+          cat > "$RUNNER_TEMP/kml_robust.patch" <<'PATCH_EOF'
+          diff --git a/libs/kml/serdes.cpp b/libs/kml/serdes.cpp
+          index a75c48d..de9d388 100644
+          --- a/libs/kml/serdes.cpp
+          +++ b/libs/kml/serdes.cpp
+          @@ -939,9 +939,11 @@ bool KmlParser::MakeValid()
+                 size_t const pointsSize = m_geometry.m_lines[lineIdx].size();
+                 if (pointsSize + (skipSet ? skipSet->size() : 0) != timestamps.size())
+                 {
+          -        MYTHROW(kml::DeserializerKml::DeserializeException,
+          -                ("Timestamps size", timestamps.size(), "mismatch with the points size:", pointsSize,
+          -                 "for the track:", lineIdx));
+          +        // Be tolerant like Google Earth: drop the broken timestamps but keep the geometry.
+          +        LOG(LWARNING, ("Timestamps size", timestamps.size(), "mismatch with the points size:", pointsSize,
+          +                       "for the track:", lineIdx, "- ignoring timestamps"));
+          +        timestamps.clear();
+          +        continue;
+                 }
+           
+                 if (skipSet)
+          @@ -1582,7 +1584,7 @@ void KmlParser::CharData(std::string & value)
+                   if (currTag == kCoordinates)
+                     SetOrigin(value);
+                 }
+          -      else if (prevTag == "LineString")
+          +      else if (prevTag == "LineString" || prevTag == "LinearRing")
+                 {
+                   if (currTag == kCoordinates)
+                     ParseLineString(value);
+          @@ -1652,7 +1654,7 @@ void KmlParser::CharData(std::string & value)
+                   if (currTag == kCoordinates)
+                     SetOrigin(value);
+                 }
+          -      else if (prevTag == "LineString")
+          +      else if (prevTag == "LineString" || prevTag == "LinearRing")
+                 {
+                   if (currTag == kCoordinates)
+                     ParseLineString(value);
+          PATCH_EOF
+          cat > "$RUNNER_TEMP/kmz_name.patch" <<'PATCH_EOF'
+          diff --git a/libs/map/bookmark_helpers.cpp b/libs/map/bookmark_helpers.cpp
+          index 388c2c2..c9a828f 100644
+          --- a/libs/map/bookmark_helpers.cpp
+          +++ b/libs/map/bookmark_helpers.cpp
+          @@ -26,6 +26,7 @@
+           
+           #include <algorithm>
+           #include <array>
+          +#include <map>
+           #include <ranges>
+           
+           namespace
+          @@ -437,6 +438,9 @@ std::string GenerateValidAndUniqueTrashedFilePath(std::string const & fileName)
+           
+           std::string const kDefaultBookmarksFileName = "Bookmarks";
+           
+          +// Imported file path -> name of the original file (used as the category name on import).
+          +static std::map<std::string, std::string> g_importCategoryNames;
+          +
+           // Populate empty category & track names based on file name: assign file name to category name,
+           // if there is only one unnamed track - assign file name to it, otherwise add numbers 1, 2, 3...
+           // to file name to build names for all unnamed tracks
+          @@ -444,7 +448,9 @@ void FillEmptyNames(std::unique_ptr<kml::FileData> & kmlData, std::string const
+           {
+             auto const name = base::GetNameFromFullPathWithoutExt(file);
+           
+          -  if (kmlData->m_categoryData.m_name.empty())
+          +  if (auto const it = g_importCategoryNames.find(file); it != g_importCategoryNames.end())
+          +    kmlData->m_categoryData.m_name[kml::kDefaultLang] = it->second;
+          +  else if (kmlData->m_categoryData.m_name.empty())
+               kmlData->m_categoryData.m_name[kml::kDefaultLang] = name;
+           
+             if (kmlData->m_tracksData.empty())
+          @@ -504,11 +510,22 @@ static std::vector<std::string> GetFilePathsToLoadFromKmz(std::string const & fi
+               files.erase(std::remove_if(files.begin(), files.end(),
+                                          [](auto const & file) { return GetLowercaseFileExt(file.first) != kKmlExtension; }),
+                           files.end());
+          +    // Name the extracted KML after the KMZ file itself, so that the imported bookmarks
+          +    // keep the same name the user sees in the file manager (instead of "doc.kml" etc.).
+          +    std::string kmzName = base::FileNameFromFullPath(filePath);
+          +    base::GetNameWithoutExt(kmzName);
+               for (auto const & [kmlFileInZip, size] : files)
+               {
+          -      auto const name = base::FileNameFromFullPath(kmlFileInZip);
+          -      auto fileSavePath = GenerateValidAndUniqueFilePath(kmlFileInZip, FileType::Kml);
+          +      std::string fileName = kmzName;
+          +      if (files.size() > 1)
+          +      {
+          +        std::string innerName = base::FileNameFromFullPath(kmlFileInZip);
+          +        base::GetNameWithoutExt(innerName);
+          +        fileName += "_" + innerName;
+          +      }
+          +      auto fileSavePath = GenerateValidAndUniqueFilePath(fileName, FileType::Kml);
+                 ZipFileReader::UnzipFile(filePath, kmlFileInZip, fileSavePath);
+          +      g_importCategoryNames[fileSavePath] = fileName;
+                 kmlFilePaths.push_back(std::move(fileSavePath));
+               }
+             }
+          @@ -538,6 +555,7 @@ static std::vector<std::string> GetFilePathsToLoadByType(std::string const & fil
+             auto fileSavePath = GenerateValidAndUniqueFilePath(base::FileNameFromFullPath(filePath), fileType);
+             if (!base::CopyFileX(filePath, fileSavePath))
+               return {};
+          +  g_importCategoryNames[fileSavePath] = base::GetNameFromFullPathWithoutExt(filePath);
+             return {std::move(fileSavePath)};
+           }
+           
+          PATCH_EOF
+          cat > "$RUNNER_TEMP/map_labels_white.patch" <<'PATCH_EOF'
+          diff --git a/data/styles/default/light/colors.mapcss b/data/styles/default/light/colors.mapcss
+          index 41aeb25..183091b 100644
+          --- a/data/styles/default/light/colors.mapcss
+          +++ b/data/styles/default/light/colors.mapcss
+          @@ -164,30 +164,30 @@
+           
+           /* 6.LABELS COLORS */
+           /* 6.1 Main labels */
+          -@label_dark: #222222;
+          -@label_medium: #333333;
+          -@label_light: #444444;
+          -@label_halo_medium: #EDEBDB;
+          -@label_halo_light: #FFFFFF;
+          +@label_dark: #FFFFFF;
+          +@label_medium: #FFFFFF;
+          +@label_light: #FFFFFF;
+          +@label_halo_medium: #000000;
+          +@label_halo_light: #000000;
+           
+           /* 6.2 Natural labels */
+           
+          -@water_label: #4499Bb;
+          -@water_label_halo: #FFFFFF;
+          -@park_label: #3A7921;
+          -@halo_park_label: #FFFFFF;
+          +@water_label: #FFFFFF;
+          +@water_label_halo: #000000;
+          +@park_label: #FFFFFF;
+          +@halo_park_label: #000000;
+           
+           /* 6.3 Place labels */
+           
+          -@city_label: #666666;
+          -@country_label: #8C8C8C;
+          -@state_label: #8C8C8C;
+          -@district_label: #7F7F7F;
+          -@housenumber: #65655E;
+          -@building_label: #61615A;
+          -@poi_label: #444444;
+          -@subway_label: #333333;
+          -@indigenous_label: #6A512F;
+          +@city_label: #FFFFFF;
+          +@country_label: #FFFFFF;
+          +@state_label: #FFFFFF;
+          +@district_label: #FFFFFF;
+          +@housenumber: #FFFFFF;
+          +@building_label: #FFFFFF;
+          +@poi_label: #FFFFFF;
+          +@subway_label: #FFFFFF;
+          +@indigenous_label: #FFFFFF;
+           
+           /* 6.4 Road labels */
+           
+          PATCH_EOF
+          cat > "$RUNNER_TEMP/dark_style.patch" <<'PATCH_EOF'
+          diff --git a/data/styles/default/dark/colors.mapcss b/data/styles/default/dark/colors.mapcss
+          index cb614e9..b91216d 100644
+          --- a/data/styles/default/dark/colors.mapcss
+          +++ b/data/styles/default/dark/colors.mapcss
+          @@ -104,17 +104,17 @@
+           /* 5.ROADS */
+           /* 5.1 All roads */
+           
+          -@trunk0: #752900;
+          -@trunk1: #752d00;
+          -@primary0: #753400;
+          -@primary1: #753300;
+          -@primary2: #753800;
+          -@secondary0: #754b00;
+          -@secondary1: #754900;
+          -@tertiary: #4d4d4d;
+          -@residential: #454545;
+          -@pedestrian: #454545;
+          -@footway: #454545;
+          +@trunk0: #E8C547;
+          +@trunk1: #E8C547;
+          +@primary0: #E8C547;
+          +@primary1: #E8C547;
+          +@primary2: #E8C547;
+          +@secondary0: #E8C547;
+          +@secondary1: #E8C547;
+          +@tertiary: #7A7A7A;
+          +@residential: #6E6E6E;
+          +@pedestrian: #6E6E6E;
+          +@footway: #6E6E6E;
+           @cycleway: #6E3D47;
+           @construction: #332F2D;
+           @track: #5F532D;
+          @@ -129,15 +129,15 @@
+           
+           /* 5.3 Tunnels */
+           
+          -@trunk_tunnel: #4d1b00;
+          +@trunk_tunnel: #A08A3A;
+           @trunk_tunnel_casing: #000000;
+          -@primary_tunnel: #4d2100;
+          +@primary_tunnel: #A08A3A;
+           @primary_tunnel_casing: #000000;
+          -@secondary_tunnel: #4d3100;
+          +@secondary_tunnel: #A08A3A;
+           @secondary_tunnel_casing:  #000000;
+          -@tertiary_tunnel: #383838;
+          +@tertiary_tunnel: #5A5A5A;
+           @tertiary_tunnel_casing:  #000000;
+          -@residential_tunnel: #303030;
+          +@residential_tunnel: #5A5A5A;
+           @residential_tunnel_casing: #000000;
+           
+           /* 5.4 Piste */
+          @@ -165,30 +165,30 @@
+           /* 6.LABELS COLORS */
+           /* 6.1 Main labels */
+           
+          -@label_dark: #a1a1a1;
+          -@label_medium: #919191;
+          -@label_light: #808080;
+          -@label_halo_medium: #111100;
+          -@label_halo_light: #060600;
+          +@label_dark: #FFFFFF;
+          +@label_medium: #FFFFFF;
+          +@label_light: #FFFFFF;
+          +@label_halo_medium: #000000;
+          +@label_halo_light: #000000;
+           
+           /* 6.2 Natural labels */
+           
+          -@water_label: #005768;
+          +@water_label: #FFFFFF;
+           @water_label_halo: #000000;
+          -@park_label: #2B4918;
+          +@park_label: #FFFFFF;
+           @halo_park_label: #111;
+           
+           /* 6.3 Place labels */
+           
+          -@city_label: #999999;
+          -@country_label: #5e5e5e;
+          -@state_label: #5e5e5e;
+          -@district_label: #6e6e6e;
+          -@housenumber: #8f8f8f;
+          -@building_label: #8c8c8c;
+          -@poi_label: #a6a6a6;
+          -@subway_label: #b2b2b2;
+          -@indigenous_label: #6A512F;
+          +@city_label: #FFFFFF;
+          +@country_label: #FFFFFF;
+          +@state_label: #FFFFFF;
+          +@district_label: #FFFFFF;
+          +@housenumber: #FFFFFF;
+          +@building_label: #FFFFFF;
+          +@poi_label: #FFFFFF;
+          +@subway_label: #FFFFFF;
+          +@indigenous_label: #FFFFFF;
+           
+           /* 6.4 Road labels */
+           
+          PATCH_EOF
+          cat > "$RUNNER_TEMP/road_gray.patch" <<'PATCH_EOF'
+          diff --git a/data/styles/default/light/colors.mapcss b/data/styles/default/light/colors.mapcss
+          index 41aeb25..35e992b 100644
+          --- a/data/styles/default/light/colors.mapcss
+          +++ b/data/styles/default/light/colors.mapcss
+          @@ -104,17 +104,17 @@
+           /* 5.ROADS */
+           /* 5.1 All roads */
+           
+          -@trunk0: #FF7326;
+          -@trunk1: #FF7A26;
+          -@primary0:  #FF8726;
+          -@primary1: #FF9440;
+          -@primary2: #FFA14C;
+          -@secondary0: #FFB226;
+          -@secondary1: #FFBF52;
+          -@tertiary: #f7f7f7;
+          -@residential: #f2f2f2;
+          -@pedestrian: #f2f2f2;
+          -@footway: #f2f2f2;
+          +@trunk0: #FFD84D;
+          +@trunk1: #FFD84D;
+          +@primary0:  #FFD84D;
+          +@primary1: #FFD84D;
+          +@primary2: #FFD84D;
+          +@secondary0: #FFD84D;
+          +@secondary1: #FFD84D;
+          +@tertiary: #B8B8B8;
+          +@residential: #A8A8A8;
+          +@pedestrian: #A8A8A8;
+          +@footway: #A8A8A8;
+           @cycleway: #5654FF;
+           @construction: #BBBBAA;
+           @track: #635730;
+          @@ -129,11 +129,11 @@
+           
+           /* 5.3 Tunnels */
+           
+          -@trunk_tunnel: #FCA462;
+          +@trunk_tunnel: #E8C547;
+           @trunk_tunnel_casing: #808080;
+          -@primary_tunnel: #FCA462;
+          +@primary_tunnel: #E8C547;
+           @primary_tunnel_casing: #808080;
+          -@secondary_tunnel: #FFBF52;
+          +@secondary_tunnel: #E8C547;
+           @secondary_tunnel_casing:  #808080;
+           @tertiary_tunnel: #FFFFFF;
+           @tertiary_tunnel_casing:  #808080;
+          PATCH_EOF
+          cat > "$RUNNER_TEMP/branding_name.patch" <<'PATCH_EOF'
+          diff --git a/android/libs/branding/src/debug/res/values/donottranslate.xml b/android/libs/branding/src/debug/res/values/donottranslate.xml
+          index f2e3411..7613e3a 100644
+          --- a/android/libs/branding/src/debug/res/values/donottranslate.xml
+          +++ b/android/libs/branding/src/debug/res/values/donottranslate.xml
+          @@ -1,4 +1,4 @@
+           <?xml version="1.0" encoding="utf-8"?>
+           <resources>
+          -  <string name="app_name" translatable="false">Debug Organic Maps</string>
+          +  <string name="app_name" translatable="false">AE Map</string>
+           </resources>
+          diff --git a/android/libs/branding/src/main/res/values/donottranslate.xml b/android/libs/branding/src/main/res/values/donottranslate.xml
+          index 498e084..7613e3a 100644
+          --- a/android/libs/branding/src/main/res/values/donottranslate.xml
+          +++ b/android/libs/branding/src/main/res/values/donottranslate.xml
+          @@ -1,4 +1,4 @@
+           <?xml version="1.0" encoding="utf-8"?>
+           <resources>
+          -  <string name="app_name" translatable="false">Organic Maps</string>
+          +  <string name="app_name" translatable="false">AE Map</string>
+           </resources>
+          PATCH_EOF
+          cat > "$RUNNER_TEMP/release_debugsign.patch" <<'PATCH_EOF'
+          diff --git a/android/groovy/application-signing.gradle b/android/groovy/application-signing.gradle
+          index 0d1f53d..88c746d 100644
+          --- a/android/groovy/application-signing.gradle
+          +++ b/android/groovy/application-signing.gradle
+          @@ -40,7 +40,7 @@ android {
+               }
+           
+               release {
+          -      signingConfig = signingConfigs.release
+          +      signingConfig = signingConfigs.debug
+               }
+           
+               beta {
+          PATCH_EOF
+          cat > "$RUNNER_TEMP/release_no_r8.patch" <<'PATCH_EOF'
+          diff --git a/android/app/build.gradle b/android/app/build.gradle
+          index 2e48322..b00bab9 100644
+          --- a/android/app/build.gradle
+          +++ b/android/app/build.gradle
+          @@ -141,8 +141,8 @@ android {
+               }
+           
+               release {
+          -      minifyEnabled true
+          -      shrinkResources = true
+          +      minifyEnabled false
+          +      shrinkResources = false
+                 // Includes the default ProGuard rules files that are packaged with the Android Gradle plugin.
+                 // To learn more, go to the documentation section about R8 configuration files.
+                 proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+          PATCH_EOF
+
+      - name: Apply patches
+        run: |
+          git apply --check "$RUNNER_TEMP/kml_robust.patch"
+          git apply "$RUNNER_TEMP/kml_robust.patch"
+          git apply --check "$RUNNER_TEMP/kmz_name.patch"
+          git apply "$RUNNER_TEMP/kmz_name.patch"
+          git apply --check "$RUNNER_TEMP/map_labels_white.patch"
+          git apply "$RUNNER_TEMP/map_labels_white.patch"
+          git apply --check "$RUNNER_TEMP/dark_style.patch"
+          git apply "$RUNNER_TEMP/dark_style.patch"
+          git apply --check "$RUNNER_TEMP/road_gray.patch"
+          git apply "$RUNNER_TEMP/road_gray.patch"
+          git apply --check "$RUNNER_TEMP/branding_name.patch"
+          git apply "$RUNNER_TEMP/branding_name.patch"
+          git apply --check "$RUNNER_TEMP/release_debugsign.patch"
+          git apply "$RUNNER_TEMP/release_debugsign.patch"
+          git apply --check "$RUNNER_TEMP/release_no_r8.patch"
+          git apply "$RUNNER_TEMP/release_no_r8.patch"
+          git diff --stat
+
+      - name: Generate company icons
+        run: |
+          echo "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" | base64 -d > "$RUNNER_TEMP/logo_mask.png"
+          cat > "$RUNNER_TEMP/gen_logo_icons.py" <<'PY_EOF'
+          import sys, os, base64
+          from PIL import Image, ImageDraw
+
+          GREEN = (31, 92, 58, 255)
+          WHITE = (255, 255, 255, 255)
+          CLEAR = (0, 0, 0, 0)
+
+          def load_mask(path):
+              return Image.open(path).convert('L')
+
+          def draw_logo(mask, size, bg, fraction):
+              S = size * 4
+              base = Image.new('RGBA', (S, S), bg)
+              w = int(S * fraction)
+              h = int(w * mask.height / mask.width)
+              m = mask.resize((w, h), Image.LANCZOS)
+              layer = Image.new('RGBA', (w, h), GREEN)
+              layer.putalpha(m)
+              base.alpha_composite(layer, ((S - w) // 2, (S - h) // 2))
+              return base.resize((size, size), Image.LANCZOS)
+
+          def circle_mask(img):
+              size = img.size[0]
+              mask = Image.new('L', (size * 4, size * 4), 0)
+              ImageDraw.Draw(mask).ellipse((0, 0, size * 4 - 1, size * 4 - 1), fill=255)
+              mask = mask.resize((size, size), Image.LANCZOS)
+              out = img.copy(); out.putalpha(mask)
+              return out
+
+          def main(mask_path, res_dir):
+              mask = load_mask(mask_path)
+              launcher = {'mdpi': 48, 'hdpi': 72, 'xhdpi': 96, 'xxhdpi': 144, 'xxxhdpi': 192}
+              foreground = {'mdpi': 108, 'hdpi': 162, 'xhdpi': 216, 'xxhdpi': 324, 'xxxhdpi': 432}
+              for dens, size in launcher.items():
+                  d = os.path.join(res_dir, 'mipmap-' + dens); os.makedirs(d, exist_ok=True)
+                  sq = draw_logo(mask, size, WHITE, 0.72)
+                  sq.save(os.path.join(d, 'ic_launcher.png'))
+                  circle_mask(sq).save(os.path.join(d, 'ic_launcher_round.png'))
+              for dens, size in foreground.items():
+                  d = os.path.join(res_dir, 'mipmap-' + dens); os.makedirs(d, exist_ok=True)
+                  draw_logo(mask, size, CLEAR, 0.6).save(os.path.join(d, 'ic_launcher_foreground.png'))
+
+          if __name__ == '__main__':
+              main(sys.argv[1], sys.argv[2])
+          PY_EOF
+          python3 "$RUNNER_TEMP/gen_logo_icons.py" "$RUNNER_TEMP/logo_mask.png" android/libs/branding/src/main/res
+          sed -i 's|@color/logo|#FFFFFF|' android/libs/branding/src/main/res/values/ic_launcher_background.xml
+
+      - name: Submodules
+        run: git submodule update --depth 1 --init --recursive --jobs=$(($(nproc) * 20))
+
+      - name: Compile map styles
+        run: bash tools/unix/generate_drules.sh
+
+      - name: Build WebRelease APK
+        working-directory: android
+        env:
+          JAVA_HOME: /usr/lib/jvm/temurin-21-jdk-amd64
+        run: |
+          ./gradlew -Parm64 assembleWebRelease
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: organicmaps-kml-release-debugsigned
+          path: android/app/build/outputs/apk/**/OrganicMaps-*.apk
+          retention-days: 14
