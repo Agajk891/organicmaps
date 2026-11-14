@@ -63,10 +63,39 @@ jobs:
           PATCH_EOF
           cat > "$RUNNER_TEMP/kmz_name.patch" <<'PATCH_EOF'
           diff --git a/libs/map/bookmark_helpers.cpp b/libs/map/bookmark_helpers.cpp
-          index 388c2c2..d6f759c 100644
+          index 388c2c2..c54d755 100644
           --- a/libs/map/bookmark_helpers.cpp
           +++ b/libs/map/bookmark_helpers.cpp
-          @@ -504,10 +504,20 @@ static std::vector<std::string> GetFilePathsToLoadFromKmz(std::string const & fi
+          @@ -26,6 +26,7 @@
+           
+           #include <algorithm>
+           #include <array>
+          +#include <map>
+           #include <ranges>
+           
+           namespace
+          @@ -444,7 +445,9 @@ void FillEmptyNames(std::unique_ptr<kml::FileData> & kmlData, std::string const
+           {
+             auto const name = base::GetNameFromFullPathWithoutExt(file);
+           
+          -  if (kmlData->m_categoryData.m_name.empty())
+          +  if (auto const it = g_kmzCategoryNames.find(file); it != g_kmzCategoryNames.end())
+          +    kmlData->m_categoryData.m_name[kml::kDefaultLang] = it->second;
+          +  else if (kmlData->m_categoryData.m_name.empty())
+               kmlData->m_categoryData.m_name[kml::kDefaultLang] = name;
+           
+             if (kmlData->m_tracksData.empty())
+          @@ -493,6 +496,9 @@ std::unique_ptr<kml::FileData> LoadKmlFile(std::string const & file, FileType fi
+             return kmlData;
+           }
+           
+          +// Extracted KML path -> name of the KMZ it came from (used as the category name on import).
+          +static std::map<std::string, std::string> g_kmzCategoryNames;
+          +
+           static std::vector<std::string> GetFilePathsToLoadFromKmz(std::string const & filePath)
+           {
+             // Extract KML files from KMZ archive and save to temp KMLs with unique name.
+          @@ -504,11 +510,22 @@ static std::vector<std::string> GetFilePathsToLoadFromKmz(std::string const & fi
                files.erase(std::remove_if(files.begin(), files.end(),
                                           [](auto const & file) { return GetLowercaseFileExt(file.first) != kKmlExtension; }),
                            files.end());
@@ -87,8 +116,10 @@ jobs:
           +      }
           +      auto fileSavePath = GenerateValidAndUniqueFilePath(fileName, FileType::Kml);
                  ZipFileReader::UnzipFile(filePath, kmlFileInZip, fileSavePath);
+          +      g_kmzCategoryNames[fileSavePath] = fileName;
                  kmlFilePaths.push_back(std::move(fileSavePath));
                }
+             }
           PATCH_EOF
           cat > "$RUNNER_TEMP/map_labels_white.patch" <<'PATCH_EOF'
           diff --git a/data/styles/default/light/colors.mapcss b/data/styles/default/light/colors.mapcss
