@@ -16,6 +16,7 @@ jobs:
       - name: Checkout release tag
         uses: actions/checkout@v6
         with:
+          repository: organicmaps/organicmaps
           ref: 2026.11.11-39-android
           fetch-depth: 200
 
