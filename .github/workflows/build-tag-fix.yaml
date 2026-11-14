@@ -1,0 +1,173 @@
+name: Build KML + Labels APK (release tag)
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build WebDebug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - name: Install build tools
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ninja-build
+
+      - name: Checkout release tag
+        uses: actions/checkout@v6
+        with:
+          ref: 2026.11.11-39-android
+          fetch-depth: 200
+
+      - name: Write patches
+        run: |
+          cat > "$RUNNER_TEMP/kml_robust.patch" <<'PATCH_EOF'
+          diff --git a/libs/kml/serdes.cpp b/libs/kml/serdes.cpp
+          index a75c48d..de9d388 100644
+          --- a/libs/kml/serdes.cpp
+          +++ b/libs/kml/serdes.cpp
+          @@ -939,9 +939,11 @@ bool KmlParser::MakeValid()
+                 size_t const pointsSize = m_geometry.m_lines[lineIdx].size();
+                 if (pointsSize + (skipSet ? skipSet->size() : 0) != timestamps.size())
+                 {
+          -        MYTHROW(kml::DeserializerKml::DeserializeException,
+          -                ("Timestamps size", timestamps.size(), "mismatch with the points size:", pointsSize,
+          -                 "for the track:", lineIdx));
+          +        // Be tolerant like Google Earth: drop the broken timestamps but keep the geometry.
+          +        LOG(LWARNING, ("Timestamps size", timestamps.size(), "mismatch with the points size:", pointsSize,
+          +                       "for the track:", lineIdx, "- ignoring timestamps"));
+          +        timestamps.clear();
+          +        continue;
+                 }
+           
+                 if (skipSet)
+          @@ -1582,7 +1584,7 @@ void KmlParser::CharData(std::string & value)
+                   if (currTag == kCoordinates)
+                     SetOrigin(value);
+                 }
+          -      else if (prevTag == "LineString")
+          +      else if (prevTag == "LineString" || prevTag == "LinearRing")
+                 {
+                   if (currTag == kCoordinates)
+                     ParseLineString(value);
+          @@ -1652,7 +1654,7 @@ void KmlParser::CharData(std::string & value)
+                   if (currTag == kCoordinates)
+                     SetOrigin(value);
+                 }
+          -      else if (prevTag == "LineString")
+          +      else if (prevTag == "LineString" || prevTag == "LinearRing")
+                 {
+                   if (currTag == kCoordinates)
+                     ParseLineString(value);
+          PATCH_EOF
+          cat > "$RUNNER_TEMP/kmz_name.patch" <<'PATCH_EOF'
+          diff --git a/libs/map/bookmark_helpers.cpp b/libs/map/bookmark_helpers.cpp
+          index 388c2c2..d6f759c 100644
+          --- a/libs/map/bookmark_helpers.cpp
+          +++ b/libs/map/bookmark_helpers.cpp
+          @@ -504,10 +504,20 @@ static std::vector<std::string> GetFilePathsToLoadFromKmz(std::string const & fi
+               files.erase(std::remove_if(files.begin(), files.end(),
+                                          [](auto const & file) { return GetLowercaseFileExt(file.first) != kKmlExtension; }),
+                           files.end());
+          +    // Name the extracted KML after the KMZ file itself, so that the imported bookmarks
+          +    // keep the same name the user sees in the file manager (instead of "doc.kml" etc.).
+          +    std::string kmzName = base::FileNameFromFullPath(filePath);
+          +    base::GetNameWithoutExt(kmzName);
+               for (auto const & [kmlFileInZip, size] : files)
+               {
+          -      auto const name = base::FileNameFromFullPath(kmlFileInZip);
+          -      auto fileSavePath = GenerateValidAndUniqueFilePath(kmlFileInZip, FileType::Kml);
+          +      std::string fileName = kmzName;
+          +      if (files.size() > 1)
+          +      {
+          +        std::string innerName = base::FileNameFromFullPath(kmlFileInZip);
+          +        base::GetNameWithoutExt(innerName);
+          +        fileName += "_" + innerName;
+          +      }
+          +      auto fileSavePath = GenerateValidAndUniqueFilePath(fileName, FileType::Kml);
+                 ZipFileReader::UnzipFile(filePath, kmlFileInZip, fileSavePath);
+                 kmlFilePaths.push_back(std::move(fileSavePath));
+               }
+          PATCH_EOF
+          cat > "$RUNNER_TEMP/map_labels_white.patch" <<'PATCH_EOF'
+          diff --git a/data/styles/default/light/colors.mapcss b/data/styles/default/light/colors.mapcss
+          index 41aeb25..183091b 100644
+          --- a/data/styles/default/light/colors.mapcss
+          +++ b/data/styles/default/light/colors.mapcss
+          @@ -164,30 +164,30 @@
+           
+           /* 6.LABELS COLORS */
+           /* 6.1 Main labels */
+          -@label_dark: #222222;
+          -@label_medium: #333333;
+          -@label_light: #444444;
+          -@label_halo_medium: #EDEBDB;
+          -@label_halo_light: #FFFFFF;
+          +@label_dark: #FFFFFF;
+          +@label_medium: #FFFFFF;
+          +@label_light: #FFFFFF;
+          +@label_halo_medium: #000000;
+          +@label_halo_light: #000000;
+           
+           /* 6.2 Natural labels */
+           
+          -@water_label: #4499Bb;
+          -@water_label_halo: #FFFFFF;
+          -@park_label: #3A7921;
+          -@halo_park_label: #FFFFFF;
+          +@water_label: #FFFFFF;
+          +@water_label_halo: #000000;
+          +@park_label: #FFFFFF;
+          +@halo_park_label: #000000;
+           
+           /* 6.3 Place labels */
+           
+          -@city_label: #666666;
+          -@country_label: #8C8C8C;
+          -@state_label: #8C8C8C;
+          -@district_label: #7F7F7F;
+          -@housenumber: #65655E;
+          -@building_label: #61615A;
+          -@poi_label: #444444;
+          -@subway_label: #333333;
+          -@indigenous_label: #6A512F;
+          +@city_label: #FFFFFF;
+          +@country_label: #FFFFFF;
+          +@state_label: #FFFFFF;
+          +@district_label: #FFFFFF;
+          +@housenumber: #FFFFFF;
+          +@building_label: #FFFFFF;
+          +@poi_label: #FFFFFF;
+          +@subway_label: #FFFFFF;
+          +@indigenous_label: #FFFFFF;
+           
+           /* 6.4 Road labels */
+           
+          PATCH_EOF
+
+      - name: Apply patches
+        run: |
+          git apply --check "$RUNNER_TEMP/kml_robust.patch"
+          git apply "$RUNNER_TEMP/kml_robust.patch"
+          git apply --check "$RUNNER_TEMP/kmz_name.patch"
+          git apply "$RUNNER_TEMP/kmz_name.patch"
+          git apply --check "$RUNNER_TEMP/map_labels_white.patch"
+          git apply "$RUNNER_TEMP/map_labels_white.patch"
+          git diff --stat
+
+      - name: Submodules
+        run: git submodule update --depth 1 --init --recursive --jobs=$(($(nproc) * 20))
+
+      - name: Build WebDebug APK
+        working-directory: android
+        env:
+          JAVA_HOME: /usr/lib/jvm/temurin-21-jdk-amd64
+        run: |
+          ./gradlew -Parm64 assembleWebDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: organicmaps-kml-labels-debug
+          path: android/app/build/outputs/apk/**/OrganicMaps-*.apk
+          retention-days: 14
