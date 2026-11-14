@@ -63,7 +63,7 @@ jobs:
           PATCH_EOF
           cat > "$RUNNER_TEMP/kmz_name.patch" <<'PATCH_EOF'
           diff --git a/libs/map/bookmark_helpers.cpp b/libs/map/bookmark_helpers.cpp
-          index 388c2c2..c95caa9 100644
+          index 388c2c2..c9a828f 100644
           --- a/libs/map/bookmark_helpers.cpp
           +++ b/libs/map/bookmark_helpers.cpp
           @@ -26,6 +26,7 @@
@@ -78,8 +78,8 @@ jobs:
            
            std::string const kDefaultBookmarksFileName = "Bookmarks";
            
-          +// Extracted KML path -> name of the KMZ it came from (used as the category name on import).
-          +static std::map<std::string, std::string> g_kmzCategoryNames;
+          +// Imported file path -> name of the original file (used as the category name on import).
+          +static std::map<std::string, std::string> g_importCategoryNames;
           +
            // Populate empty category & track names based on file name: assign file name to category name,
            // if there is only one unnamed track - assign file name to it, otherwise add numbers 1, 2, 3...
@@ -89,7 +89,7 @@ jobs:
              auto const name = base::GetNameFromFullPathWithoutExt(file);
            
           -  if (kmlData->m_categoryData.m_name.empty())
-          +  if (auto const it = g_kmzCategoryNames.find(file); it != g_kmzCategoryNames.end())
+          +  if (auto const it = g_importCategoryNames.find(file); it != g_importCategoryNames.end())
           +    kmlData->m_categoryData.m_name[kml::kDefaultLang] = it->second;
           +  else if (kmlData->m_categoryData.m_name.empty())
                kmlData->m_categoryData.m_name[kml::kDefaultLang] = name;
@@ -116,10 +116,18 @@ jobs:
           +      }
           +      auto fileSavePath = GenerateValidAndUniqueFilePath(fileName, FileType::Kml);
                  ZipFileReader::UnzipFile(filePath, kmlFileInZip, fileSavePath);
-          +      g_kmzCategoryNames[fileSavePath] = fileName;
+          +      g_importCategoryNames[fileSavePath] = fileName;
                  kmlFilePaths.push_back(std::move(fileSavePath));
                }
              }
+          @@ -538,6 +555,7 @@ static std::vector<std::string> GetFilePathsToLoadByType(std::string const & fil
+             auto fileSavePath = GenerateValidAndUniqueFilePath(base::FileNameFromFullPath(filePath), fileType);
+             if (!base::CopyFileX(filePath, fileSavePath))
+               return {};
+          +  g_importCategoryNames[fileSavePath] = base::GetNameFromFullPathWithoutExt(filePath);
+             return {std::move(fileSavePath)};
+           }
+           
           PATCH_EOF
           cat > "$RUNNER_TEMP/map_labels_white.patch" <<'PATCH_EOF'
           diff --git a/data/styles/default/light/colors.mapcss b/data/styles/default/light/colors.mapcss
@@ -176,6 +184,59 @@ jobs:
            /* 6.4 Road labels */
            
           PATCH_EOF
+          cat > "$RUNNER_TEMP/dark_labels_white.patch" <<'PATCH_EOF'
+          diff --git a/data/styles/default/dark/colors.mapcss b/data/styles/default/dark/colors.mapcss
+          index cb614e9..41daf88 100644
+          --- a/data/styles/default/dark/colors.mapcss
+          +++ b/data/styles/default/dark/colors.mapcss
+          @@ -165,30 +165,30 @@
+           /* 6.LABELS COLORS */
+           /* 6.1 Main labels */
+           
+          -@label_dark: #a1a1a1;
+          -@label_medium: #919191;
+          -@label_light: #808080;
+          -@label_halo_medium: #111100;
+          -@label_halo_light: #060600;
+          +@label_dark: #FFFFFF;
+          +@label_medium: #FFFFFF;
+          +@label_light: #FFFFFF;
+          +@label_halo_medium: #000000;
+          +@label_halo_light: #000000;
+           
+           /* 6.2 Natural labels */
+           
+          -@water_label: #005768;
+          +@water_label: #FFFFFF;
+           @water_label_halo: #000000;
+          -@park_label: #2B4918;
+          +@park_label: #FFFFFF;
+           @halo_park_label: #111;
+           
+           /* 6.3 Place labels */
+           
+          -@city_label: #999999;
+          -@country_label: #5e5e5e;
+          -@state_label: #5e5e5e;
+          -@district_label: #6e6e6e;
+          -@housenumber: #8f8f8f;
+          -@building_label: #8c8c8c;
+          -@poi_label: #a6a6a6;
+          -@subway_label: #b2b2b2;
+          -@indigenous_label: #6A512F;
+          +@city_label: #FFFFFF;
+          +@country_label: #FFFFFF;
+          +@state_label: #FFFFFF;
+          +@district_label: #FFFFFF;
+          +@housenumber: #FFFFFF;
+          +@building_label: #FFFFFF;
+          +@poi_label: #FFFFFF;
+          +@subway_label: #FFFFFF;
+          +@indigenous_label: #FFFFFF;
+           
+           /* 6.4 Road labels */
+           
+          PATCH_EOF
 
       - name: Apply patches
         run: |
@@ -185,10 +246,15 @@ jobs:
           git apply "$RUNNER_TEMP/kmz_name.patch"
           git apply --check "$RUNNER_TEMP/map_labels_white.patch"
           git apply "$RUNNER_TEMP/map_labels_white.patch"
+          git apply --check "$RUNNER_TEMP/dark_labels_white.patch"
+          git apply "$RUNNER_TEMP/dark_labels_white.patch"
           git diff --stat
 
       - name: Submodules
         run: git submodule update --depth 1 --init --recursive --jobs=$(($(nproc) * 20))
+
+      - name: Compile map styles
+        run: bash tools/unix/generate_drules.sh
 
       - name: Build WebDebug APK
         working-directory: android
