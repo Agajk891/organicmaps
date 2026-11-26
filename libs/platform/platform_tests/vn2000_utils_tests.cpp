@@ -62,3 +62,26 @@ UNIT_TEST(VN2000_InvalidInput)
   TEST(!VN2000ToLatLon(2326237.0, -1.0, 105.0), ());
   TEST(!VN2000ToLatLon(2326237.0, 1000001.0, 105.0), ());
 }
+
+UNIT_TEST(VN2000_ProvinceMeridian)
+{
+  // Values from the official table (Ministry of Natural Resources and Environment).
+  TEST(CentralMeridianOfProvince("Hà Nội") == 105.0, ("Hà Nội"));
+  TEST(CentralMeridianOfProvince("Đà Nẵng") == 107.75, ("Đà Nẵng"));
+  TEST(CentralMeridianOfProvince("Hồ Chí Minh") == 105.75, ("Hồ Chí Minh"));
+  TEST(CentralMeridianOfProvince("Ninh Bình") == 105.0, ("Ninh Bình"));
+  TEST(CentralMeridianOfProvince("Đắk Lắk") == 108.5, ("Đắk Lắk"));
+  TEST(CentralMeridianOfProvince("Điện Biên") == 103.0, ("Điện Biên"));
+
+  // Case, diacritics and the TP / Thành phố prefix do not matter.
+  TEST(CentralMeridianOfProvince("ha noi") == 105.0, ("ha noi"));
+  TEST(CentralMeridianOfProvince("TP Hồ Chí Minh") == 105.75, ("TP Hồ Chí Minh"));
+  TEST(CentralMeridianOfProvince("Thành phố Đà Nẵng") == 107.75, ("Thành phố Đà Nẵng"));
+  TEST(CentralMeridianOfProvince("dak lak") == 108.5, ("dak lak"));
+
+  // Similar names must stay apart: Hà Tĩnh is 105.5, Hà Nội is 105.0.
+  TEST(CentralMeridianOfProvince("Hà Tĩnh") == 105.5, ("Hà Tĩnh"));
+
+  TEST(!CentralMeridianOfProvince("Atlantis"), ());
+  TEST(!CentralMeridianOfProvince(""), ());
+}

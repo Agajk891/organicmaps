@@ -5,6 +5,7 @@
 #include "platform/vn2000_utils.hpp"
 
 #include <sstream>
+#include <vector>
 
 namespace search
 {
@@ -32,15 +33,42 @@ std::optional<ms::LatLon> MatchVN2000Coords(std::string const & query)
   if (prefix != "vn2000" && prefix != "vn-2000")
     return {};
 
-  std::string cmStr, xStr, yStr, extra;
-  if (!(iss >> cmStr >> xStr >> yStr) || (iss >> extra))
+  std::vector<std::string> tokens;
+  for (std::string token; iss >> token;)
+    tokens.push_back(token);
+  // At least "<place> <X> <Y>"; the place can be several words.
+  if (tokens.size() < 3)
     return {};
 
-  double cm, x, y;
-  if (!IsPlainNumber(cmStr) || !IsPlainNumber(xStr) || !IsPlainNumber(yStr))
+  size_t const n = tokens.size();
+  std::string const & xStr = tokens[n - 2];
+  std::string const & yStr = tokens[n - 1];
+  double x, y;
+  if (!IsPlainNumber(xStr) || !IsPlainNumber(yStr) || !strings::to_double(xStr, x) || !strings::to_double(yStr, y))
     return {};
-  if (!strings::to_double(cmStr, cm) || !strings::to_double(xStr, x) || !strings::to_double(yStr, y))
-    return {};
+
+  std::string place;
+  for (size_t i = 0; i + 2 < n; ++i)
+  {
+    if (i > 0)
+      place += ' ';
+    place += tokens[i];
+  }
+
+  // The place is either a numeric central meridian or a province/city name from the official table.
+  double cm;
+  if (IsPlainNumber(place))
+  {
+    if (!strings::to_double(place, cm))
+      return {};
+  }
+  else
+  {
+    auto const meridian = vn2000_utils::CentralMeridianOfProvince(place);
+    if (!meridian)
+      return {};
+    cm = *meridian;
+  }
 
   return vn2000_utils::VN2000ToLatLon(x, y, cm);
 }

@@ -48,3 +48,27 @@ UNIT_TEST(MatchVN2000Coords_NoCoordinate)
   TEST(!MatchVN2000Coords("VN2000 300 2326237 588788"), ());
 }
 }  // namespace vn2000_coords_match_test
+
+namespace vn2000_coords_match_test
+{
+UNIT_TEST(MatchVN2000Coords_Province)
+{
+  // A province name gives the same point as its numeric central meridian.
+  auto const byName = search::MatchVN2000Coords("VN2000 Hà Nội 2326345.5343 588592.6647");
+  auto const byNumber = search::MatchVN2000Coords("VN2000 105 2326345.5343 588592.6647");
+  TEST(byName, ());
+  TEST(byNumber, ());
+  TEST(ms::AlmostEqualAbs(*byName, *byNumber, 1e-9), (*byName, *byNumber));
+  TEST(ms::AlmostEqualAbs(*byName, kHanoi, 1e-6), (*byName));
+
+  // Plain spelling, the TP prefix, the hyphenated prefix and a multi-word name.
+  TEST(search::MatchVN2000Coords("vn2000 ha noi 2326345.5343 588592.6647"), ());
+  TEST(search::MatchVN2000Coords("VN-2000 TP Hà Nội 2326345 588592"), ());
+  TEST(search::MatchVN2000Coords("VN2000 Đắk Lắk 1500000 600000"), ());
+
+  // An unknown place is not a coordinate, so the normal search still runs.
+  TEST(!search::MatchVN2000Coords("VN2000 Atlantis 2326345 588592"), ());
+  // The last two numbers are X and Y; a place with no numbers after it is rejected.
+  TEST(!search::MatchVN2000Coords("VN2000 Hà Nội 2326345"), ());
+}
+}  // namespace vn2000_coords_match_test
