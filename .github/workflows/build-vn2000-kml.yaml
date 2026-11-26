@@ -3,7 +3,6 @@ on:
   workflow_dispatch:
   push:
     branches: [ccr-95c66ce9-54fn9v]
-    paths: [.github/workflows/build-vn2000-kml.yaml]
 
 jobs:
   build:
