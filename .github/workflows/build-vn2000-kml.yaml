@@ -420,7 +420,7 @@ jobs:
           repository: Agajk891/organicmaps
           ref: ccr-95c66ce9-54fn9v
           path: vn2000-src
-          fetch-depth: 50
+          fetch-depth: 0
 
       - name: Cherry-pick VN2000 commits
         run: |
@@ -438,58 +438,6 @@ jobs:
           echo "Cherry-picking:"; echo "$commits"
           git cherry-pick -X theirs $commits
           git log --oneline -8
-
-      - name: Generate company icons
-        run: |
-          echo "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" | base64 -d > "$RUNNER_TEMP/logo_mask.png"
-          cat > "$RUNNER_TEMP/gen_logo_icons.py" <<'PY_EOF'
-          import sys, os, base64
-          from PIL import Image, ImageDraw
-
-          GREEN = (31, 92, 58, 255)
-          WHITE = (255, 255, 255, 255)
-          CLEAR = (0, 0, 0, 0)
-
-          def load_mask(path):
-              return Image.open(path).convert('L')
-
-          def draw_logo(mask, size, bg, fraction):
-              S = size * 4
-              base = Image.new('RGBA', (S, S), bg)
-              w = int(S * fraction)
-              h = int(w * mask.height / mask.width)
-              m = mask.resize((w, h), Image.LANCZOS)
-              layer = Image.new('RGBA', (w, h), GREEN)
-              layer.putalpha(m)
-              base.alpha_composite(layer, ((S - w) // 2, (S - h) // 2))
-              return base.resize((size, size), Image.LANCZOS)
-
-          def circle_mask(img):
-              size = img.size[0]
-              mask = Image.new('L', (size * 4, size * 4), 0)
-              ImageDraw.Draw(mask).ellipse((0, 0, size * 4 - 1, size * 4 - 1), fill=255)
-              mask = mask.resize((size, size), Image.LANCZOS)
-              out = img.copy(); out.putalpha(mask)
-              return out
-
-          def main(mask_path, res_dir):
-              mask = load_mask(mask_path)
-              launcher = {'mdpi': 48, 'hdpi': 72, 'xhdpi': 96, 'xxhdpi': 144, 'xxxhdpi': 192}
-              foreground = {'mdpi': 108, 'hdpi': 162, 'xhdpi': 216, 'xxhdpi': 324, 'xxxhdpi': 432}
-              for dens, size in launcher.items():
-                  d = os.path.join(res_dir, 'mipmap-' + dens); os.makedirs(d, exist_ok=True)
-                  sq = draw_logo(mask, size, WHITE, 0.72)
-                  sq.save(os.path.join(d, 'ic_launcher.png'))
-                  circle_mask(sq).save(os.path.join(d, 'ic_launcher_round.png'))
-              for dens, size in foreground.items():
-                  d = os.path.join(res_dir, 'mipmap-' + dens); os.makedirs(d, exist_ok=True)
-                  draw_logo(mask, size, CLEAR, 0.6).save(os.path.join(d, 'ic_launcher_foreground.png'))
-
-          if __name__ == '__main__':
-              main(sys.argv[1], sys.argv[2])
-          PY_EOF
-          python3 "$RUNNER_TEMP/gen_logo_icons.py" "$RUNNER_TEMP/logo_mask.png" android/libs/branding/src/main/res
-          sed -i 's|@color/logo|#FFFFFF|' android/libs/branding/src/main/res/values/ic_launcher_background.xml
 
       - name: Submodules
         run: git submodule update --depth 1 --init --recursive --jobs=$(($(nproc) * 20))
@@ -513,7 +461,7 @@ jobs:
               'bookmark_list_unpin': 'Unpin',
               'bookmark_list_sort': 'Sort lists',
               'bookmark_list_sort_name': 'By name',
-              'bookmark_list_sort_date': 'By import date',
+              'bookmark_list_sort_date': 'By last modified',
           }
           add = ''.join('  <string name="%s">%s</string>\n' % (k, v) for k, v in english.items() if 'name="%s"' % k not in text)
           open(path, 'w', encoding='utf-8').write(text.replace('</resources>', add + '</resources>'))
