@@ -13,9 +13,9 @@ namespace vn2000_utils
  *
  * Axis order follows Vietnamese cadastral practice: X = northing (Bắc), Y = easting (Đông).
  *
- * Datum: VN-2000 is treated as identical to WGS84 (the GRS80 and WGS84 ellipsoids differ by well under
- * a millimetre). The published VN-2000 -> WGS84 parameters disagree with each other and are not
- * verified, so no datum shift is applied; the result may be off by a few metres.
+ * Datum: VN-2000 -> WGS84 uses the official 7-parameter Helmert set of Decision 05/2007/QĐ-BTNMT
+ * (translations about -192, -39, -111 m, so the shift is far from negligible). The values were read from
+ * gosco.vn, which quotes the decision.
  */
 
 // Returns nullopt unless the central meridian is a plausible Vietnamese zone and X, Y are plausible
