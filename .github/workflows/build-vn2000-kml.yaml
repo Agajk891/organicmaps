@@ -420,16 +420,16 @@ jobs:
         with:
           repository: Agajk891/organicmaps
           ref: ccr-95c66ce9-54fn9v
-          path: vn2000-src
+          path: ${{ runner.temp }}/vn2000-src
           fetch-depth: 50
 
       - name: Cherry-pick VN2000 commits
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git fetch "$GITHUB_WORKSPACE/vn2000-src" ccr-95c66ce9-54fn9v
+          git fetch "$RUNNER_TEMP/vn2000-src" ccr-95c66ce9-54fn9v
           # Commits on the fork branch above its base (fork master 182d6b79).
-          commits=$(git -C vn2000-src rev-list --reverse 182d6b79..HEAD)
+          commits=$(git -C "$RUNNER_TEMP/vn2000-src" rev-list --reverse 182d6b79..HEAD)
           # The release patches edit the same files (e.g. the app name); commit them first so the
           # cherry-pick can run, and let the VN2000 commits win on conflicting lines.
           git add -A
