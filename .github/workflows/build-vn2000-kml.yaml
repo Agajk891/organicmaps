@@ -349,7 +349,7 @@ jobs:
            <?xml version="1.0" encoding="utf-8"?>
            <resources>
           -  <string name="app_name" translatable="false">Debug Organic Maps</string>
-          +  <string name="app_name" translatable="false">AE Map</string>
+          +  <string name="app_name" translatable="false">Map AE</string>
            </resources>
           diff --git a/android/libs/branding/src/main/res/values/donottranslate.xml b/android/libs/branding/src/main/res/values/donottranslate.xml
           index 498e084..7613e3a 100644
@@ -359,7 +359,7 @@ jobs:
            <?xml version="1.0" encoding="utf-8"?>
            <resources>
           -  <string name="app_name" translatable="false">Organic Maps</string>
-          +  <string name="app_name" translatable="false">AE Map</string>
+          +  <string name="app_name" translatable="false">Map AE</string>
            </resources>
           PATCH_EOF
           cat > "$RUNNER_TEMP/release_debugsign.patch" <<'PATCH_EOF'
