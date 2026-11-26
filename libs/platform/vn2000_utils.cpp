@@ -16,11 +16,13 @@ double constexpr kMaxCentralMeridianDeg = 112.0;
 double constexpr kMaxX = 3000000.0;
 double constexpr kMaxY = 1000000.0;
 
-// Decision 05/2007/QĐ-BTNMT, VN-2000 -> WGS84 (position-vector convention, as in geodesy). Rotations are
-// arc-seconds and the scale is in ppm.
+// Decision 05/2007/QĐ-BTNMT, VN-2000 -> WGS84, rotations in arc-seconds and scale in ppm. The sign of the
+// rotations is the one that reproduces published survey points: the control points of the Hai Phong GPS network
+// (VN-2000 X/Y on the 105°45' meridian and their WGS84 B/L) agree to about 1 mm. The opposite sign is off by
+// 0.2 m north and 0.7 m east.
 geodesy::HelmertParams constexpr kVn2000ToWgs84{
-    -191.90441429, -39.30318279, -111.45032835, geodesy::SecToRad(-0.00928836), geodesy::SecToRad(0.01975479),
-    geodesy::SecToRad(-0.00427372), 0.252906278e-6};
+    -191.90441429, -39.30318279, -111.45032835, geodesy::SecToRad(0.00928836), geodesy::SecToRad(-0.01975479),
+    geodesy::SecToRad(0.00427372), 0.252906278e-6};
 
 // Official central meridians of the 34 provinces and cities after the merger.
 struct Province
