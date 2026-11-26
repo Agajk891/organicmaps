@@ -58,7 +58,7 @@ class TabAdapter extends FragmentPagerAdapter
     {
       super.onPageSelected(position);
       if (mTabSelectedListener != null)
-        mTabSelectedListener.onTabSelected(mTabs.get(position));
+        mTabSelectedListener.onTabSelected(mTabList.get(position));
     }
   }
 
@@ -93,7 +93,7 @@ class TabAdapter extends FragmentPagerAdapter
 
   private final FragmentManager mFragmentManager;
   private final ViewPager mPager;
-  private final List<Tab> mTabs = new ArrayList<>();
+  private final List<Tab> mTabList = new ArrayList<>();
   private final List<Class<? extends Fragment>> mClasses = new ArrayList<>();
   private final SparseArray<Fragment> mFragments = new SparseArray<>();
   private OnTabSelectedListener mTabSelectedListener;
@@ -107,7 +107,7 @@ class TabAdapter extends FragmentPagerAdapter
     this.mHistoryEnabled = historyEnabled;
     for (Tab tab : Tab.values())
     {
-      mTabs.add(tab);
+      mTabList.add(tab);
       mClasses.add(tab.getFragmentClass());
     }
     final List<Fragment> tabFragments = new ArrayList<>();
@@ -162,7 +162,7 @@ class TabAdapter extends FragmentPagerAdapter
 
   private void attachTo(TabLayout tabs)
   {
-    for (Tab tab : mTabs)
+    for (Tab tab : mTabList)
     {
       TabLayout.Tab t = tabs.newTab();
       t.setText(tab.getTitleRes());
@@ -175,7 +175,7 @@ class TabAdapter extends FragmentPagerAdapter
     SharedPreferences preferences = MwmApplication.prefs(mPager.getContext());
     // The saved position may point past the end when the History tab is disabled.
     int lastSelectedTabPosition =
-        Math.min(preferences.getInt(Config.KEY_PREF_LAST_SEARCHED_TAB, 0), mTabs.size() - 1);
+        Math.min(preferences.getInt(Config.KEY_PREF_LAST_SEARCHED_TAB, 0), mTabList.size() - 1);
     listener.onPageSelected(lastSelectedTabPosition);
   }
 

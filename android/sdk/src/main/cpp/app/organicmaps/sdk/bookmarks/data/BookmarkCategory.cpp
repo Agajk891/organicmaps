@@ -1,7 +1,5 @@
 #include "BookmarkCategory.hpp"
 
-#include <chrono>
-
 #include "app/organicmaps/sdk/Framework.hpp"
 #include "app/organicmaps/sdk/core/jni_helper.hpp"
 
@@ -9,6 +7,7 @@
 
 #include "kml/types.hpp"
 
+#include <chrono>
 #include <vector>
 
 namespace
