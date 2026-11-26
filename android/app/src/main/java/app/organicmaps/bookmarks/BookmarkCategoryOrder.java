@@ -17,9 +17,9 @@ import java.util.Set;
  * Order of the bookmark lists: the sort mode and the pinned lists. Kept per device in preferences,
  * so pinning a list does not change its file.
  */
-final class BookmarkCategoryOrder
+public final class BookmarkCategoryOrder
 {
-  enum SortMode
+  public enum SortMode
   {
     NAME,
     IMPORT_DATE
@@ -30,13 +30,13 @@ final class BookmarkCategoryOrder
 
   private final SharedPreferences mPrefs;
 
-  BookmarkCategoryOrder(@NonNull Context context)
+  public BookmarkCategoryOrder(@NonNull Context context)
   {
     mPrefs = MwmApplication.prefs(context);
   }
 
   @NonNull
-  SortMode getSortMode()
+  public SortMode getSortMode()
   {
     final String value = mPrefs.getString(KEY_SORT_MODE, SortMode.NAME.name());
     try
@@ -49,17 +49,17 @@ final class BookmarkCategoryOrder
     }
   }
 
-  void setSortMode(@NonNull SortMode mode)
+  public void setSortMode(@NonNull SortMode mode)
   {
     mPrefs.edit().putString(KEY_SORT_MODE, mode.name()).apply();
   }
 
-  boolean isPinned(long categoryId)
+  public boolean isPinned(long categoryId)
   {
     return getPinnedIds().contains(String.valueOf(categoryId));
   }
 
-  void togglePinned(long categoryId)
+  public void togglePinned(long categoryId)
   {
     // The set returned by the preferences must not be modified, so work on a copy.
     final Set<String> pinned = new HashSet<>(getPinnedIds());
@@ -71,7 +71,7 @@ final class BookmarkCategoryOrder
 
   /** Pinned lists first, then the rest, each group in the current sort mode. */
   @NonNull
-  List<BookmarkCategory> sorted(@NonNull List<BookmarkCategory> categories)
+  public List<BookmarkCategory> sorted(@NonNull List<BookmarkCategory> categories)
   {
     final Comparator<BookmarkCategory> pinnedFirst = Comparator.comparing(c -> !isPinned(c.getId()));
     final Comparator<BookmarkCategory> byMode;
