@@ -80,6 +80,9 @@ std::array<double, 20> constexpr kLineWidthZoomFactor = {
     // 1   2    3    4    5    6    7    8    9    10   11   12   13   14   15   16   17   18   19   20
     0.3, 0.3, 0.3, 0.4, 0.5, 0.6, 0.7, 0.7, 0.7, 0.7, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
 
+// Direction chevrons and start/finish markers are off: tracks are drawn as plain smooth lines.
+bool constexpr kTrackDirectionArrowsEnabled = false;
+bool constexpr kTrackEndpointsEnabled = false;
 int constexpr kTrackDirectionMinZoom = 11;
 int constexpr kTrackEndpointMinZoom = 8;
 float constexpr kTrackArrowOffset = 48.0f;
@@ -820,7 +823,7 @@ void CacheUserLines(ref_ptr<dp::GraphicsContext> context, TileKey const & tileKe
     minSegmentSqrLength = math::Pow2(4.0 * vs * GetScreenScale(tileKey.m_zoomLevel));
 
   m2::RectD const tileRect = tileKey.GetWrappedDataRect();
-  bool const showDirection = tileKey.m_zoomLevel >= kTrackDirectionMinZoom;
+  bool const showDirection = kTrackDirectionArrowsEnabled && tileKey.m_zoomLevel >= kTrackDirectionMinZoom;
   double const pixelToGlobalScale = GetScreenScale(tileKey.m_zoomLevel);
   float const arrowOffset = kTrackArrowOffset * static_cast<float>(vs);
   float const arrowStep = kTrackArrowStep * static_cast<float>(vs);
@@ -838,7 +841,7 @@ void CacheUserLines(ref_ptr<dp::GraphicsContext> context, TileKey const & tileKe
 
   // Arrows render after all endpoint markers, so every track must keep clear of every marker.
   std::vector<m2::RectD> endpointRects;
-  if (tileKey.m_zoomLevel >= kTrackEndpointMinZoom)
+  if (kTrackEndpointsEnabled && tileKey.m_zoomLevel >= kTrackEndpointMinZoom)
   {
     double const radius = (kTrackEndpointRadius + kTrackEndpointOutlineWidth) * vs * pixelToGlobalScale;
     source.ForEachUniqueTrack(tileKey.m_zoomLevel, renderParams, [&](UserLineRenderParams const & renderInfo)
