@@ -535,7 +535,7 @@ public class SearchFragment extends Fragment implements SearchListener, Categori
       mNestedScrollingSyncedHasQuery = null;
       mNestedScrollingSyncedActiveTab = null;
     }
-    UiUtils.showIf(historyEnabled, mTabLayout);
+    UiUtils.showIf(true, mTabLayout);
 
     final ViewPager pager = mPager;
     final TabAdapter tabAdapter = new TabAdapter(getChildFragmentManager(), pager, mTabLayout, historyEnabled);
