@@ -8,6 +8,20 @@
 
 namespace search
 {
+namespace
+{
+// Digits, sign and decimal point only, so "nan" and "inf" never reach the grid code.
+bool IsPlainNumber(std::string const & s)
+{
+  if (s.empty())
+    return false;
+  for (char c : s)
+    if (!((c >= '0' && c <= '9') || c == '.' || c == '-'))
+      return false;
+  return true;
+}
+}  // namespace
+
 std::optional<ms::LatLon> MatchVN2000Coords(std::string const & query)
 {
   std::istringstream iss(query);
@@ -23,6 +37,8 @@ std::optional<ms::LatLon> MatchVN2000Coords(std::string const & query)
     return {};
 
   double cm, x, y;
+  if (!IsPlainNumber(cmStr) || !IsPlainNumber(xStr) || !IsPlainNumber(yStr))
+    return {};
   if (!strings::to_double(cmStr, cm) || !strings::to_double(xStr, x) || !strings::to_double(yStr, y))
     return {};
 

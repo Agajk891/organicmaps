@@ -36,6 +36,9 @@ UNIT_TEST(MatchVN2000Coords_NoCoordinate)
   TEST(!MatchVN2000Coords("VN2000 105 2326345 588592 1"), ());
   // Non-numeric fields.
   TEST(!MatchVN2000Coords("VN2000 105 X 588788"), ());
+  // "nan" and "inf" parse as doubles but are not coordinates.
+  TEST(!MatchVN2000Coords("VN2000 105 nan 588592"), ());
+  TEST(!MatchVN2000Coords("VN2000 105 2326345 inf"), ());
   // Ordinary queries that mention the prefix only.
   TEST(!MatchVN2000Coords("VN2000"), ());
   TEST(!MatchVN2000Coords("vn2000 bridge"), ());
