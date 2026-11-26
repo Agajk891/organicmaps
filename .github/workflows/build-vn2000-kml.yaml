@@ -510,6 +510,11 @@ jobs:
               'vn2000_x': 'X (north, m)',
               'vn2000_y': 'Y (east, m)',
               'vn2000_show': 'Show on map',
+              'bookmark_list_pin': 'Pin to top',
+              'bookmark_list_unpin': 'Unpin',
+              'bookmark_list_sort': 'Sort lists',
+              'bookmark_list_sort_name': 'By name',
+              'bookmark_list_sort_date': 'By import date',
           }
           add = ''.join('  <string name="%s">%s</string>\n' % (k, v) for k, v in english.items() if 'name="%s"' % k not in text)
           open(path, 'w', encoding='utf-8').write(text.replace('</resources>', add + '</resources>'))
