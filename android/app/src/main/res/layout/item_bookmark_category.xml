@@ -18,7 +18,8 @@
     <TextView
       android:id="@+id/name"
       style="@style/BookmarkListRow.Title"
-      android:ellipsize="middle"
+      android:ellipsize="none"
+      android:singleLine="false"
       tools:text="Bookmark name looooooooooooooooooongasdasdasd" />
 
     <TextView
