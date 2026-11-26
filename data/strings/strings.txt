@@ -3461,6 +3461,31 @@ vi = Đánh dấu Bộ
 zh-Hans = 书签列表
 zh-Hant = 書籤列表
 
+[vn2000_tab]
+comment = Search tab title for entering VN-2000 coordinates; keep as is in all languages
+tags = android-app
+en = VN2000
+
+[vn2000_province]
+comment = Search tab label for the province or city picker used with VN-2000 coordinates
+tags = android-app
+en = Province or city
+
+[vn2000_x]
+comment = Search tab hint for the VN-2000 X coordinate (northing, in metres)
+tags = android-app
+en = X (north, m)
+
+[vn2000_y]
+comment = Search tab hint for the VN-2000 Y coordinate (easting, in metres)
+tags = android-app
+en = Y (east, m)
+
+[vn2000_show]
+comment = Search tab button that shows the entered VN-2000 point on the map
+tags = android-app
+en = Show on map
+
 [[Search categories]]
 
 [category_eat]
