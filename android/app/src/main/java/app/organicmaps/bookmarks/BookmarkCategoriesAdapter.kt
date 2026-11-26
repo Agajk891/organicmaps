@@ -1,7 +1,10 @@
 package app.organicmaps.bookmarks
 
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.View
 import android.view.ViewGroup
+import android.widget.PopupMenu
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.recyclerview.widget.RecyclerView
@@ -17,9 +20,12 @@ class BookmarkCategoriesAdapter(
     private val onCategoryClick: (BookmarkCategory) -> Unit,
     private val onCategoryMenuClick: (BookmarkCategory) -> Unit,
     private val categoryListCallback: CategoryListCallback,
+    private val order: BookmarkCategoryOrder,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    var bookmarkCategories: List<BookmarkCategory> = categories
+    private var rawCategories: List<BookmarkCategory> = categories
+
+    var bookmarkCategories: List<BookmarkCategory> = order.sorted(categories)
         private set
 
     private enum class RowType { HEADER, CATEGORY, ACTION }
@@ -46,7 +52,8 @@ class BookmarkCategoriesAdapter(
         get() = bookmarkCategories.size
 
     fun setItems(categories: List<BookmarkCategory>) {
-        bookmarkCategories = categories
+        rawCategories = categories
+        bookmarkCategories = order.sorted(categories)
         notifyDataSetChanged()
     }
 
@@ -75,6 +82,10 @@ class BookmarkCategoriesAdapter(
                         true
                     }
                     holder.setVisibilityListener { holder.entity.toggleVisibility() }
+                    holder.setPinClickListener {
+                        order.togglePinned(holder.entity.id)
+                        setItems(rawCategories)
+                    }
                     holder.setMoreButtonClickListener { onCategoryMenuClick(holder.entity) }
                 }
             }
@@ -95,6 +106,22 @@ class BookmarkCategoriesAdapter(
     private fun HeaderViewHolder.bindHeader() {
         setAction(massOperationAction, BookmarkManager.INSTANCE.areAllCategoriesInvisible())
         text.setText(R.string.bookmark_lists)
+        sortView.setOnClickListener { showSortMenu(it) }
+    }
+
+    private fun showSortMenu(anchor: View) {
+        val menu = PopupMenu(anchor.context, anchor)
+        menu.menu.add(Menu.NONE, SORT_BY_NAME, 0, R.string.bookmark_list_sort_name)
+        menu.menu.add(Menu.NONE, SORT_BY_IMPORT_DATE, 1, R.string.bookmark_list_sort_date)
+        menu.setOnMenuItemClickListener { item ->
+            order.setSortMode(
+                if (item.itemId == SORT_BY_IMPORT_DATE) BookmarkCategoryOrder.SortMode.IMPORT_DATE
+                else BookmarkCategoryOrder.SortMode.NAME,
+            )
+            setItems(rawCategories)
+            true
+        }
+        menu.show()
     }
 
     private fun CategoryViewHolder.bindCategory(index: Int) {
@@ -103,6 +130,7 @@ class BookmarkCategoriesAdapter(
         setName(category.name)
         setSize()
         setVisibilityState(category.isVisible)
+        setPinned(order.isPinned(category.id))
         bindCardPosition(index == 0, index == categoryCount - 1)
     }
 
@@ -119,5 +147,7 @@ class BookmarkCategoriesAdapter(
 
     private companion object {
         const val HEADER_COUNT = 1
+        const val SORT_BY_NAME = 0
+        const val SORT_BY_IMPORT_DATE = 1
     }
 }

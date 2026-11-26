@@ -72,6 +72,7 @@ class BookmarkCategoriesFragment :
         onCategoryClick = ::openCategory,
         onCategoryMenuClick = ::showBottomMenu,
         categoryListCallback = this,
+        order = BookmarkCategoryOrder(requireContext()),
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {

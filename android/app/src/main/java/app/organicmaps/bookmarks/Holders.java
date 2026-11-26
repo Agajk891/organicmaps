@@ -127,12 +127,21 @@ public class Holders
     private final TextView mButton;
     @NonNull
     private final TextView mText;
+    @NonNull
+    private final ImageView mSort;
 
     HeaderViewHolder(@NonNull View itemView)
     {
       super(itemView);
       mButton = itemView.findViewById(R.id.button);
       mText = itemView.findViewById(R.id.text_message);
+      mSort = itemView.findViewById(R.id.sort);
+    }
+
+    @NonNull
+    public ImageView getSortView()
+    {
+      return mSort;
     }
 
     @NonNull
@@ -203,6 +212,8 @@ public class Holders
     private final ImageView mVisibilityMarker;
     @NonNull
     private final ImageView mMoreButton;
+    @NonNull
+    private final ImageView mPin;
 
     public CategoryViewHolder(@NonNull View root)
     {
@@ -211,6 +222,19 @@ public class Holders
       mName = root.findViewById(R.id.name);
       mVisibilityMarker = root.findViewById(R.id.eye);
       mMoreButton = root.findViewById(R.id.more);
+      mPin = root.findViewById(R.id.pin);
+    }
+
+    void setPinned(boolean pinned)
+    {
+      mPin.setImageResource(pinned ? R.drawable.ic_star_filled : R.drawable.ic_star_outline);
+      mPin.setContentDescription(mPin.getContext().getString(pinned ? R.string.bookmark_list_unpin
+                                                                    : R.string.bookmark_list_pin));
+    }
+
+    void setPinClickListener(@Nullable View.OnClickListener listener)
+    {
+      mPin.setOnClickListener(listener);
     }
 
     protected void setSize()

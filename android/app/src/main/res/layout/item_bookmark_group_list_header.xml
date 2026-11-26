@@ -37,7 +37,22 @@
     android:textColor="?colorAccent"
     app:layout_constrainedWidth="true"
     app:layout_constraintBottom_toBottomOf="parent"
-    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintEnd_toStartOf="@id/sort"
     app:layout_constraintStart_toEndOf="@id/text_message"
     app:layout_constraintTop_toTopOf="parent" />
+  <ImageView
+    android:id="@+id/sort"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="?selectableItemBackground"
+    android:contentDescription="@string/bookmark_list_sort"
+    android:minWidth="@dimen/height_block_base"
+    android:minHeight="@dimen/height_block_base"
+    android:padding="@dimen/margin_half"
+    android:scaleType="center"
+    app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintTop_toTopOf="parent"
+    app:srcCompat="@drawable/ic_sort"
+    app:tint="?colorAccent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

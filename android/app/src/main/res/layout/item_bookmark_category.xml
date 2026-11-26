@@ -29,6 +29,13 @@
   </LinearLayout>
 
   <ImageView
+    android:id="@+id/pin"
+    style="@style/BookmarkListRow.TrailingIcon"
+    android:contentDescription="@string/bookmark_list_pin"
+    app:srcCompat="@drawable/ic_star_outline"
+    app:tint="?accentColorSelector" />
+
+  <ImageView
     android:id="@+id/more"
     style="@style/BookmarkListRow.TrailingIcon"
     android:contentDescription="@string/placepage_more_button"
