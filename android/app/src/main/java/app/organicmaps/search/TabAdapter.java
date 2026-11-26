@@ -23,34 +23,6 @@ class TabAdapter extends FragmentPagerAdapter
 {
   enum Tab
   {
-    HISTORY {
-      @Override
-      public int getTitleRes()
-      {
-        return R.string.history;
-      }
-
-      @Override
-      public Class<? extends Fragment> getFragmentClass()
-      {
-        return SearchHistoryFragment.class;
-      }
-    },
-
-    CATEGORIES {
-      @Override
-      public int getTitleRes()
-      {
-        return R.string.categories;
-      }
-
-      @Override
-      public Class<? extends Fragment> getFragmentClass()
-      {
-        return SearchCategoriesFragment.class;
-      }
-    },
-
     VN2000 {
       @Override
       public int getTitleRes()
@@ -135,8 +107,6 @@ class TabAdapter extends FragmentPagerAdapter
     this.mHistoryEnabled = historyEnabled;
     for (Tab tab : Tab.values())
     {
-      if (tab == Tab.HISTORY && !historyEnabled)
-        continue;
       mTabs.add(tab);
       mClasses.add(tab.getFragmentClass());
     }

@@ -535,7 +535,8 @@ public class SearchFragment extends Fragment implements SearchListener, Categori
       mNestedScrollingSyncedHasQuery = null;
       mNestedScrollingSyncedActiveTab = null;
     }
-    UiUtils.showIf(true, mTabLayout);
+    // Only the VN2000 tab is left, so the tab bar stays hidden.
+    UiUtils.showIf(false, mTabLayout);
 
     final ViewPager pager = mPager;
     final TabAdapter tabAdapter = new TabAdapter(getChildFragmentManager(), pager, mTabLayout, historyEnabled);
