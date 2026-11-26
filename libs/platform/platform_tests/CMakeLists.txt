@@ -21,6 +21,7 @@ set(SRC
   irish_grid_utils_tests.cpp
   os_grid_utils_tests.cpp
   utm_mgrs_utils_tests.cpp
+  vn2000_utils_tests.cpp
 )
 
 # Qt HTTP backend tests are only valid where http_client_qt.cpp is compiled

@@ -158,6 +158,8 @@ set(SRC
   utils.hpp
   utm_mgrs_coords_match.cpp
   utm_mgrs_coords_match.hpp
+  vn2000_coords_match.cpp
+  vn2000_coords_match.hpp
 )
 
 omim_add_library(${PROJECT_NAME} ${SRC})

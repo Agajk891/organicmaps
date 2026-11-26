@@ -70,6 +70,8 @@ set(SRC
   os_grid_utils.hpp
   utm_mgrs_utils.cpp
   utm_mgrs_utils.hpp
+  vn2000_utils.cpp
+  vn2000_utils.hpp
 )
 
 if (PLATFORM_IPHONE)

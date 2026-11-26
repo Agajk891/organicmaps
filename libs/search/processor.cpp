@@ -15,6 +15,7 @@
 #include "search/search_params.hpp"
 #include "search/utils.hpp"
 #include "search/utm_mgrs_coords_match.hpp"
+#include "search/vn2000_coords_match.hpp"
 
 #include "storage/country_info_getter.hpp"
 #include "storage/storage_defines.hpp"
@@ -662,7 +663,7 @@ bool Processor::SearchDebug()
 // UNAMBIGUOUS coordinate request - i.e. whether the caller should skip the normal search.
 //
 // Strong matchers have a self-identifying signature (a decimal lat/lon, a UTM/MGRS zone, two OS Grid
-// letters, a ge0/geo: link): a hit means the query IS a coordinate, so we suppress the normal search.
+// letters, a "VN2000" prefix, a ge0/geo: link): a hit means the query IS a coordinate, so we suppress the normal search.
 //
 // Weak matchers (single-letter Irish Grid, bare-numeric ITM) are easy to confuse with ordinary
 // queries. We still surface their coordinate at the top when the input is a valid in-range reference,
@@ -671,7 +672,8 @@ bool Processor::SearchDebug()
 bool Processor::SearchCoordinates()
 {
   using CoordMatcher = std::optional<ms::LatLon> (*)(std::string const &);
-  constexpr CoordMatcher kStrongMatchers[] = {&MatchUTMCoords, &MatchMGRSCoords, &MatchOSGridCoords};
+  constexpr CoordMatcher kStrongMatchers[] = {&MatchUTMCoords, &MatchMGRSCoords, &MatchOSGridCoords,
+                                               &MatchVN2000Coords};
   constexpr CoordMatcher kWeakMatchers[] = {&MatchIrishGridCoords, &MatchITMCoords};
 
   bool strongMatch = false;

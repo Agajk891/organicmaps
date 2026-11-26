@@ -26,6 +26,7 @@ set(SRC
   irish_grid_coords_match_test.cpp
   os_grid_coords_match_test.cpp
   utm_mgrs_coords_match_test.cpp
+  vn2000_coords_match_test.cpp
 )
 
 omim_add_test(${PROJECT_NAME} ${SRC})
