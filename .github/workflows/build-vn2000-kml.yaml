@@ -439,6 +439,22 @@ jobs:
           git cherry-pick -X theirs $commits
           git log --oneline -8
 
+      - name: Brighten road colours (closer to Google Maps)
+        run: |
+          # Runs after the release patches (dark_style.patch), which made the roads dark grey and yellow.
+          f=data/styles/default/dark/colors.mapcss
+          sed -i -E \
+            -e 's/^@(trunk0|trunk1|primary0|primary1|primary2|secondary0|secondary1):[^;]*;/@\1: #FFD84D;/' \
+            -e 's/^@tertiary:[^;]*;/@tertiary: #E6E6E6;/' \
+            -e 's/^@(residential|pedestrian):[^;]*;/@\1: #D4D4D4;/' \
+            -e 's/^@(trunk_tunnel|primary_tunnel|secondary_tunnel):[^;]*;/@\1: #D9BC3F;/' \
+            -e 's/^@tertiary_tunnel:[^;]*;/@tertiary_tunnel: #9A9A9A;/' \
+            -e 's/^@residential_tunnel:[^;]*;/@residential_tunnel: #8A8A8A;/' "$f"
+          git diff --stat -- "$f"
+          # Fail the build if the edit did not take effect.
+          grep -q '^@residential: #D4D4D4;' "$f"
+          grep -q '^@trunk0: #FFD84D;' "$f"
+
       - name: Submodules
         run: git submodule update --depth 1 --init --recursive --jobs=$(($(nproc) * 20))
 
