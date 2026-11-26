@@ -23,7 +23,7 @@ UNIT_TEST(MatchVN2000Coords_Positive)
 
   // Case-insensitive prefix, with the hyphenated spelling and extra spacing.
   TEST(MatchVN2000Coords("vn2000 105 2326345.3117 588591.9440"), ());
-  TEST(MatchVN2000Coords("VN-2000   105   2326345.5343   588592.6647"), ());
+  TEST(MatchVN2000Coords("VN-2000   105   2326345.3117   588591.9440"), ());
   TEST(MatchVN2000Coords("  VN2000 105 2326345 588592  "), ());
 }
 
