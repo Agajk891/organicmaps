@@ -33,12 +33,14 @@ public final class BookmarkCategory implements Parcelable
   private final int mBookmarksCount;
   private final int mAreasCount;
   private boolean mIsVisible;
+  private final long mLastModifiedMs;
 
   // Used by JNI.
   @Keep
   @SuppressWarnings("unused")
   private BookmarkCategory(long id, @NonNull String name, @NonNull String annotation, @NonNull String description,
-                           int tracksCount, int bookmarksCount, int areasCount, boolean isVisible)
+                           int tracksCount, int bookmarksCount, int areasCount, boolean isVisible,
+                           long lastModifiedMs)
   {
     mId = id;
     mName = name;
@@ -48,6 +50,13 @@ public final class BookmarkCategory implements Parcelable
     mBookmarksCount = bookmarksCount;
     mAreasCount = areasCount;
     mIsVisible = isVisible;
+    mLastModifiedMs = lastModifiedMs;
+  }
+
+  /** Last modification time of the category file, in milliseconds since the epoch. */
+  public long getLastModifiedMs()
+  {
+    return mLastModifiedMs;
   }
 
   @Override
@@ -239,6 +248,7 @@ public final class BookmarkCategory implements Parcelable
     dest.writeInt(this.mBookmarksCount);
     dest.writeInt(this.mAreasCount);
     dest.writeByte(this.mIsVisible ? (byte) 1 : (byte) 0);
+    dest.writeLong(this.mLastModifiedMs);
   }
 
   private BookmarkCategory(@NonNull Parcel in)
@@ -251,6 +261,7 @@ public final class BookmarkCategory implements Parcelable
     this.mBookmarksCount = in.readInt();
     this.mAreasCount = in.readInt();
     this.mIsVisible = in.readByte() != 0;
+    this.mLastModifiedMs = in.readLong();
   }
 
   public static final Creator<BookmarkCategory> CREATOR = new Creator<>() {

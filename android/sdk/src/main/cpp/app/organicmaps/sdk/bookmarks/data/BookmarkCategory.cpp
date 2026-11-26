@@ -1,5 +1,7 @@
 #include "BookmarkCategory.hpp"
 
+#include <chrono>
+
 #include "app/organicmaps/sdk/Framework.hpp"
 #include "app/organicmaps/sdk/core/jni_helper.hpp"
 
@@ -32,6 +34,7 @@ jobject ToJavaBookmarkCategory(JNIEnv * env, kml::MarkGroupId id)
     "I"                   // bookmarksCount
     "I"                   // areasCount
     "Z"                   // isVisible
+    "J"                   // lastModifiedMs
     ")V"
   );
   // clang-format on
@@ -59,7 +62,8 @@ jobject ToJavaBookmarkCategory(JNIEnv * env, kml::MarkGroupId id)
     static_cast<jint>(tracksCount),
     static_cast<jint>(bookmarksCount),
     static_cast<jint>(manager.GetAreaIds(data.m_id).size()),
-    static_cast<jboolean>(isVisible)
+    static_cast<jboolean>(isVisible),
+    static_cast<jlong>(std::chrono::duration_cast<std::chrono::milliseconds>(data.m_lastModified.time_since_epoch()).count())
   );
   // clang-format on
 }
