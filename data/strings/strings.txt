@@ -3507,9 +3507,9 @@ tags = android-app
 en = By name
 
 [bookmark_list_sort_date]
-comment = Sort option: bookmark lists by the date the file was imported or last changed
+comment = Sort option: bookmark lists by the time the list was last modified, newest first
 tags = android-app
-en = By import date
+en = By last modified
 
 [[Search categories]]
 
