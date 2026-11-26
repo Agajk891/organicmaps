@@ -3486,6 +3486,31 @@ comment = Search tab button that shows the entered VN-2000 point on the map
 tags = android-app
 en = Show on map
 
+[bookmark_list_pin]
+comment = Button on a bookmark list row that pins the list to the top
+tags = android-app
+en = Pin to top
+
+[bookmark_list_unpin]
+comment = Button on a pinned bookmark list row that removes the pin
+tags = android-app
+en = Unpin
+
+[bookmark_list_sort]
+comment = Button on the bookmark lists header that opens the sort menu
+tags = android-app
+en = Sort lists
+
+[bookmark_list_sort_name]
+comment = Sort option: bookmark lists by name
+tags = android-app
+en = By name
+
+[bookmark_list_sort_date]
+comment = Sort option: bookmark lists by the date the file was imported or last changed
+tags = android-app
+en = By import date
+
 [[Search categories]]
 
 [category_eat]
