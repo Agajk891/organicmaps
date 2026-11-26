@@ -430,8 +430,12 @@ jobs:
           git fetch "$GITHUB_WORKSPACE/vn2000-src" ccr-95c66ce9-54fn9v
           # Commits on the fork branch above its base (fork master 182d6b79).
           commits=$(git -C vn2000-src rev-list --reverse 182d6b79..HEAD)
+          # The release patches edit the same files (e.g. the app name); commit them first so the
+          # cherry-pick can run, and let the VN2000 commits win on conflicting lines.
+          git add -A
+          git commit -q -m "CI: apply release patches" || true
           echo "Cherry-picking:"; echo "$commits"
-          git cherry-pick $commits
+          git cherry-pick -X theirs $commits
           git log --oneline -8
 
       - name: Generate company icons
